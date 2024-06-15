@@ -1,0 +1,51 @@
+version: '3.1'
+
+services:
+  mymariadb:
+    image: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: keycloak
+      MYSQL_USER: keycloak
+      MYSQL_PASSWORD: password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--silent"]
+    # volumes:
+    #   - './openldap_data:/bitnami/openldap'
+    ports:
+      - 3306:3306
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8888:8080
+
+  kc:
+    image: quay.io/keycloak/keycloak:25.0.0
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      # DB_VENDOR: mariadb
+      # DB_ADDR: mymariadb
+      # DB_DATABASE: keycloak
+      # DB_USER: keycloak
+      # DB_PASSWORD: password
+      # KEYCLOAK_USER: admin
+      # KEYCLOAK_PASSWORD: admin
+      # KEYCLOAK_FRONTEND_URL: "http://localhost:8000/auth/"
+      # PROXY_ADDRESS_FORWARDING: "true"
+      # CACHE_OWNERS_COUNT: 2
+      # CACHE_OWNERS_AUTH_SESSIONS_COUNT: 2
+      # JGROUPS_DISCOVERY_PROTOCOL: JDBC_PING
+    restart: on-failure
+    ports:
+      - 8080:8080
+    command:
+      - start-dev
+    # depends_on:
+    #   - mymariadb
+
+# volumes:
+#   mariadb_data: ./
+#     driver: local
