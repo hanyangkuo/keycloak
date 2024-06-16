@@ -71,6 +71,21 @@
 			<artifactId>gson</artifactId>
 			<version>2.11.0</version>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.retry</groupId>
+			<artifactId>spring-retry</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-aspects</artifactId>
+		</dependency>
+
+		<!-- Bouncy Castle library implementation is more low-level compared to Spring Security Crypto library -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpkix-jdk18on</artifactId>
+			<version>1.76</version>
+		</dependency>
 	</dependencies>
 
 	<build>
