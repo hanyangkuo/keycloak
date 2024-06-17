@@ -6,12 +6,14 @@ import com.example.demo.model.keycloak.Realm
 import com.example.demo.model.keycloak.User
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import org.apache.http.auth.AuthenticationException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.*
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Service
+import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.client.RestTemplate
 import java.lang.reflect.Type
 import java.net.ConnectException
@@ -153,25 +155,38 @@ class KeycloakAdminService {
     }
 
     @Retryable(
-        value = [ConnectException::class],
+        value = [ConnectException::class, AuthenticationException::class],
         maxAttempts = 3,
         backoff = Backoff(delay = 1000L)
     )
     fun updateCredential(accessToken: String, realm: String, userId: String, credential: Credential): Boolean {
-        val url = "$keycloakUrl/admin/realms/$realm/users/$userId/reset-password"
-        val headers = HttpHeaders()
-        headers["Authorization"] = "Bearer $accessToken"
-
-        val requestEntity = HttpEntity(credential, headers)
-
-        val responseEntity: ResponseEntity<String> =
-            restTemplate.exchange(url, HttpMethod.PUT, requestEntity, String::class.java)
-
-        if (responseEntity.statusCode != HttpStatus.NO_CONTENT) {
-            logger.error("Failed to update user credential: ${responseEntity.statusCode}, ${responseEntity.body}")
-            return false
+        try {
+            val url = "$keycloakUrl/admin/realms/$realm/users/$userId/reset-password"
+            val headers = HttpHeaders()
+            headers.setBearerAuth(accessToken)
+            val requestEntity = HttpEntity(credential, headers)
+            val responseEntity = restTemplate.exchange(url, HttpMethod.PUT, requestEntity, String::class.java)
+            if (responseEntity.statusCode != HttpStatus.NO_CONTENT) {
+                logger.error("Failed to update user credential: ${responseEntity.statusCode}, ${responseEntity.body}")
+                return false
+            }
+            logger.info("Update user credential success. ")
+            return true
+        } catch (e: Exception){
+            when (e) {
+                is ConnectException -> throw e
+                is HttpStatusCodeException -> {
+                    logger.info("Failed to update user credential: ${e.statusCode}, ${e.responseBodyAsString}")
+                    if (e.statusCode == HttpStatus.UNAUTHORIZED) {
+                        logger.info("refresh token")
+                        throw AuthenticationException()
+                    }
+                }
+                else -> {
+                    logger.info("Failed to update user credential: ", e)
+                }
+            }
         }
-        logger.info("Update user credential success. ")
-        return true
+        return false
     }
 }

@@ -23,9 +23,9 @@ class KeycloakAdminServiceTest {
 
     @Test
     fun testGetAccessToken(){
+        keycloakAdminService.updateCredential("accessToken", "", "", Credential())
         val accessToken = keycloakAdminService.getAccessToken()
         logger.info(accessToken)
-
         val realms = keycloakAdminService.getRealms(accessToken)
         logger.info("$realms")
 
